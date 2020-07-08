@@ -1,0 +1,723 @@
+---
+title: "HCAMP Post-Injury IMPACT Data"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: spacelab
+    highlight: tango 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(here)
+library(janitor)
+library(rio)
+library(colorblindr)
+library(gghighlight)
+library(forcats)
+library(ggrepel)
+library(gt)
+library(knitr)
+library(kableExtra)
+library(reactable)
+library(plotly)
+library(glue)
+library(fs)
+library(rstatix)
+library(ggpubr)
+
+theme_set(theme_minimal(20) +
+            theme(legend.position = "bottom",
+                  panel.grid.major.x = element_line(colour = "gray60"),
+                  panel.grid.minor.x = element_blank(),
+                  panel.grid.major.y = element_blank())
+          )
+
+
+files <- dir_ls(here::here("data"), glob = "*.csv")
+
+d <- map_df(files, read_csv, .id = "file",
+                 col_types = cols(.default = "c")) %>% 
+  modify(~parse_guess(.x)) %>% 
+  janitor::clean_names() %>% 
+  mutate(year = parse_number(file)) %>% 
+  mutate(year = as.factor(year))
+
+mean_2 <- function(x) {
+  z <- na.omit(x)
+  sum(z) / length(z)
+}
+
+str(d)
+d$user_symptom22delayed
+d$user_symptom11delayed
+
+impact2 <- d %>% 
+  mutate(user_gender = as.factor(user_gender),
+         user_handedness = as.factor(user_handedness),
+         user_height = as.factor(user_height),
+         user_weight = as.factor(user_weight),
+         user_country = as.factor(user_country),
+         user_first_language = as.factor(user_first_language),
+         user_second_language = as.factor(user_second_language),
+         user_education_level = as.factor(user_education_level),
+         user_special_ed1 = as.factor(user_special_ed1),
+         user_special_ed2 = as.factor(user_special_ed2),
+         user_special_ed3 = as.factor(user_special_ed3),
+         user_special_ed4 = as.factor(user_special_ed4),
+         user_special_ed5 = as.factor(user_special_ed5),
+         add_adhd = as.factor(add_adhd),
+         dyslexia = as.factor(dyslexia),
+         autism = as.factor(autism),
+         user_treatment_received1 = as.factor(user_treatment_received1),
+         user_treatment_received2 = as.factor(user_treatment_received2),
+         user_treatment_received3 = as.factor(user_treatment_received3),
+         user_treatment_received4 = as.factor(user_treatment_received4),
+         user_treatment_received5 = as.factor(user_treatment_received5),
+         user_treatment_received6 = as.factor(user_treatment_received6),
+         user_treatment_received7 = as.factor(user_treatment_received7),
+         user_current_sport = as.factor(user_current_sport),
+         user_primary_position = as.factor(user_primary_position),
+         user_level_of_participation = as.factor(user_level_of_participation),
+         user_years_playing = as.factor(user_years_playing),
+         user_number_of_concussions = as.factor(user_number_of_concussions),
+         user_concussion_type1 = as.factor(user_concussion_type1),
+         user_concussion_type2 = as.factor(user_concussion_type2),
+         user_concussion_type3 = as.factor(user_concussion_type3),
+         user_concussion_type4 = as.factor(user_concussion_type4),
+         user_total_games_missed = as.factor(user_total_games_missed),
+         user_concussion_history = as.factor(user_concussion_history),
+         user_last_concussion_date = as.factor(user_last_concussion_date),
+         test_type = as.factor(test_type),
+         test_date = as.factor(test_date),
+         exam_language = as.factor(exam_language),
+         test_version = as.factor(test_version),
+         word_memory_lp = as.factor(word_memory_lp),
+         word_memory_dm_correct = as.factor(word_memory_dm_correct),
+         word_memory_total_percent_correct = as.factor(word_memory_total_percent_correct),
+         design_memory_lp = as.factor(design_memory_lp),
+         design_memory_dm_correct = as.factor(design_memory_dm_correct),
+         design_memory_total_percent_correct = as.factor(design_memory_total_percent_correct),
+         x_oaverage_incorrect = as.factor(x_oaverage_incorrect),
+         three_letters_percentage_letters_correct = as.factor(three_letters_percentage_letters_correct),
+         user_symptom1delayed = as.factor(user_symptom1delayed))
+
+str(impact2)
+
+impact2$user_symptom1delayed
+
+
+impact3 <- impact2 %>% 
+  mutate(user_height = as.numeric(user_height),
+         user_weight = as.numeric(user_weight),
+         user_education_level = as.numeric(user_education_level),
+         user_years_playing = as.numeric(user_years_playing),
+         user_number_of_concussions = as.numeric(user_number_of_concussions),
+         user_concussion_type1 = as.numeric(user_concussion_type1),
+         user_concussion_type2 = as.numeric(user_concussion_type2),
+         user_concussion_type3 = as.numeric(user_concussion_type3),
+         user_concussion_type4 = as.numeric(user_concussion_type4),
+         user_total_games_missed = as.numeric(user_total_games_missed),
+         word_memory_lp = as.numeric(word_memory_lp),
+         word_memory_dm_correct = as.numeric(word_memory_dm_correct),
+         word_memory_total_percent_correct = as.numeric(word_memory_total_percent_correct),
+         design_memory_lp = as.numeric(design_memory_lp),
+         design_memory_dm_correct = as.numeric(design_memory_dm_correct),
+         design_memory_total_percent_correct = as.numeric(design_memory_total_percent_correct),
+         x_oaverage_incorrect = as.numeric(x_oaverage_incorrect),
+         three_letters_percentage_letters_correct = as.numeric(three_letters_percentage_letters_correct),
+         user_symptom1delayed = as.numeric(user_symptom1delayed))
+
+str(impact3)
+
+mean_2(impact3$user_symptom1delayed)
+mean_2(impact3$user_symptom2delayed)
+
+impact <- impact3
+
+str(impact)
+```
+
+```{r, include=FALSE}
+#copying code over from previous documents:
+test_time <- impact %>% 
+  select(year,
+         passport_id, 
+         user_gender, 
+         user_age, 
+         test_type, 
+         test_date, 
+         test_version, 
+         user_current_sport,
+         user_number_of_concussions,
+         user_education_level,
+         user_memory_composite_score_verbal,
+         user_memory_composite_score_visual,
+         user_impulse_control_composite_score,
+         user_reaction_time_composite_score,
+         user_impulse_control_composite_score,
+         user_visual_motor_composite_score) 
+
+str(test_time)
+
+test_time <- test_time %>% 
+  filter(test_type != "Baseline ++")
+
+test_time %>% 
+  arrange(passport_id)
+
+baseline <- test_time 
+
+post_injury <- test_time
+
+baseline <- baseline %>% 
+  filter(test_type != "Post-Injury 1")
+
+baseline <- baseline %>% 
+  filter(test_type != "Post-Injury 2")
+
+baseline <- baseline %>% 
+  filter(test_type != "Post-Injury 3")
+
+baseline <- baseline %>% 
+  filter(test_type != "Post-Injury 4")
+
+post_injury <- post_injury %>% 
+  filter(test_type != "Baseline")
+
+#widen baseline and post-injury data sets 
+
+multiple_baseline <- baseline %>% 
+  group_by(passport_id) %>% 
+  filter(n() > 1) %>% 
+  mutate(baseline_number = row_number()) %>% 
+  spread(baseline_number, test_type, sep = "_") %>% 
+  arrange(passport_id)
+
+
+#mem verbal organization
+multiple_mem_verbal <- multiple_baseline %>% 
+  group_by(passport_id) %>% 
+  mutate(number = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = passport_id,
+    names_from = number,
+    values_from = c(test_date, user_memory_composite_score_verbal),
+    names_glue = "{.value}_{number}"
+  ) 
+
+one_mem_verbal <- multiple_mem_verbal %>% 
+  select(c(1, 2, 11)) %>% 
+  arrange(passport_id) %>% 
+  na.omit() 
+
+
+two_mem_verbal <- multiple_mem_verbal %>% 
+  select(c(1:3, 11:12)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_mem_verbal <- multiple_mem_verbal %>% 
+  select(c(1:4, 11:13)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_mem_verbal <- multiple_mem_verbal %>% 
+  select(c(1:5, 11:14)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+
+#mem visual organization
+multiple_mem_visual <- multiple_baseline %>% 
+  group_by(passport_id) %>% 
+  mutate(number = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = passport_id,
+    names_from = number,
+    values_from = c(test_date, user_memory_composite_score_visual),
+    names_glue = "{.value}_{number}"
+  )  
+
+one_mem_visual <- multiple_mem_visual %>% 
+  select(c(1, 2, 11)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_mem_visual <- multiple_mem_visual %>% 
+  select(c(1:3, 11:12)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_mem_visual <- multiple_mem_visual %>% 
+  select(c(1:4, 11:13)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_mem_visual <- multiple_mem_visual %>% 
+  select(c(1:5, 11:14)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+#impulse control organization - total of 420 
+multiple_impulse_control <- multiple_baseline %>% 
+  group_by(passport_id) %>% 
+  mutate(number = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = passport_id,
+    names_from = number,
+    values_from = c(test_date, user_impulse_control_composite_score),
+    names_glue = "{.value}_{number}"
+  ) 
+
+one_impulse_control <- multiple_impulse_control %>% 
+  select(c(1, 2, 11)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_impulse_control <- multiple_impulse_control %>% 
+  select(c(1:3, 11:12)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_impulse_control <- multiple_impulse_control %>% 
+  select(c(1:4, 11:13)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_impulse_control <- multiple_impulse_control %>% 
+  select(c(1:5, 11:14)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+
+#reaction time organization
+multiple_reaction_time <- multiple_baseline %>% 
+  group_by(passport_id) %>% 
+  mutate(number = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = passport_id,
+    names_from = number,
+    values_from = c(test_date, user_reaction_time_composite_score),
+    names_glue = "{.value}_{number}"
+  ) 
+
+one_reaction_time <- multiple_reaction_time %>% 
+  select(c(1, 2, 11)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_reaction_time <- multiple_reaction_time %>% 
+  select(c(1:3, 11:12)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_reaction_time <- multiple_reaction_time %>% 
+  select(c(1:4, 11:13)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_reaction_time <- multiple_reaction_time %>% 
+  select(c(1:5, 11:14)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+#visual motor organization
+multiple_visual_motor <- multiple_baseline %>% 
+  group_by(passport_id) %>% 
+  mutate(number = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = passport_id,
+    names_from = number,
+    values_from = c(test_date, user_visual_motor_composite_score),
+    names_glue = "{.value}_{number}"
+  ) 
+
+one_visual_motor <- multiple_visual_motor %>% 
+  select(c(1, 2, 11)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_visual_motor <- multiple_visual_motor %>% 
+  select(c(1:3, 11:12)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_visual_motor <- multiple_visual_motor %>% 
+  select(c(1:4, 11:13)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_visual_motor <- multiple_visual_motor %>% 
+  select(c(1:5, 11:14)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+
+#baseline joins 
+
+# one baseline join - total of 18,748
+one_a <- full_join(one_mem_verbal, one_mem_visual)
+one_b <- full_join(one_a, one_impulse_control)
+one_c <- full_join(one_b, one_reaction_time)
+one_baselines <- full_join(one_c, one_visual_motor)
+
+# two baseline join - total of 18,739
+two_a <- full_join(two_mem_verbal, two_mem_visual)
+two_b <- full_join(two_a, two_impulse_control)
+two_c <- full_join(two_b, two_reaction_time)
+two_baselines <- full_join(two_c, two_visual_motor)
+
+# three baseline join - total of 2,930
+three_a <- full_join(three_mem_verbal, three_mem_visual)
+three_b <- full_join(three_a, three_impulse_control)
+three_c <- full_join(three_b, three_reaction_time)
+three_baselines <- full_join(three_c, three_visual_motor)
+
+# four baseline join - total of 420
+four_a <- full_join(four_mem_verbal, four_mem_visual)
+four_b <- full_join(four_a, four_impulse_control)
+four_c <- full_join(four_b, four_reaction_time)
+four_baselines <- full_join(four_c, four_visual_motor)
+
+
+#post-injury wide data sets 
+
+#verbal memory 
+post_injury_mem_verbal <- post_injury %>% 
+  group_by(passport_id, test_type) %>% 
+  mutate(row = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = c(row, passport_id),
+    names_from = test_type,
+    values_from = c(test_date, user_memory_composite_score_verbal),
+  ) %>% 
+  arrange(passport_id) %>% 
+  janitor::clean_names() 
+
+one_pi_mem_verbal <- post_injury_mem_verbal %>% 
+  select(c(1:3, 7)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_pi_mem_verbal <- post_injury_mem_verbal %>% 
+  select(c(1:4, 7:8)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_pi_mem_verbal <- post_injury_mem_verbal %>% 
+  select(c(1:5, 7:9)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_pi_mem_verbal <- post_injury_mem_verbal %>% 
+  select(c(1:6, 7:10)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+#visual memory 
+post_injury_mem_visual <- post_injury %>% 
+  group_by(passport_id, test_type) %>% 
+  mutate(row = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = c(row, passport_id),
+    names_from = test_type,
+    values_from = c(test_date, user_memory_composite_score_visual),
+  ) %>% 
+  arrange(passport_id) %>% 
+  janitor::clean_names() 
+
+
+one_pi_mem_visual <- post_injury_mem_visual %>% 
+  select(c(1:3, 7)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_pi_mem_visual <- post_injury_mem_visual %>% 
+  select(c(1:4, 7:8)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_pi_mem_visual <- post_injury_mem_visual %>% 
+  select(c(1:5, 7:9)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_pi_mem_visual <- post_injury_mem_visual %>% 
+  select(c(1:6, 7:10)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+#impulse control
+post_injury_impulse_control <- post_injury %>% 
+  group_by(passport_id, test_type) %>% 
+  mutate(row = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = c(row, passport_id),
+    names_from = test_type,
+    values_from = c(test_date, user_impulse_control_composite_score),
+  ) %>% 
+  arrange(passport_id) %>% 
+  janitor::clean_names() 
+
+
+one_pi_impulse_control <- post_injury_impulse_control %>% 
+  select(c(1:3, 7)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_pi_impulse_control <- post_injury_impulse_control %>% 
+  select(c(1:4, 7:8)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_pi_impulse_control <- post_injury_impulse_control %>% 
+  select(c(1:5, 7:9)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_pi_impulse_control <- post_injury_impulse_control %>% 
+  select(c(1:6, 7:10)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+# reaction time
+post_injury_reaction_time <- post_injury %>% 
+  group_by(passport_id, test_type) %>% 
+  mutate(row = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = c(row, passport_id),
+    names_from = test_type,
+    values_from = c(test_date, user_reaction_time_composite_score),
+  ) %>% 
+  arrange(passport_id) %>% 
+  janitor::clean_names() 
+
+
+one_pi_reaction_time <- post_injury_reaction_time %>% 
+  select(c(1:3, 7)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_pi_reaction_time <- post_injury_reaction_time %>% 
+  select(c(1:4, 7:8)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_pi_reaction_time <- post_injury_reaction_time %>% 
+  select(c(1:5, 7:9)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_pi_reaction_time <- post_injury_reaction_time %>% 
+  select(c(1:6, 7:10)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+# visual motor
+post_injury_visual_motor <- post_injury %>% 
+  group_by(passport_id, test_type) %>% 
+  mutate(row = row_number()) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = c(row, passport_id),
+    names_from = test_type,
+    values_from = c(test_date, user_visual_motor_composite_score),
+  ) %>% 
+  arrange(passport_id) %>% 
+  janitor::clean_names() 
+
+
+one_pi_visual_motor <- post_injury_visual_motor %>% 
+  select(c(1:3, 7)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+two_pi_visual_motor <- post_injury_visual_motor %>% 
+  select(c(1:4, 7:8)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+three_pi_visual_motor <- post_injury_visual_motor %>% 
+  select(c(1:5, 7:9)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+four_pi_visual_motor <- post_injury_visual_motor %>% 
+  select(c(1:6, 7:10)) %>% 
+  arrange(passport_id) %>% 
+  na.omit()
+
+
+# one post injury join - total of 10,041
+pi_one_a <- full_join(one_pi_mem_verbal, one_pi_mem_visual)
+pi_one_b <- full_join(pi_one_a, one_pi_impulse_control)
+pi_one_c <- full_join(pi_one_b, one_pi_reaction_time)
+one_pi <- full_join(pi_one_c, one_pi_visual_motor)
+
+# two post injury join - total of 5,766
+pi_two_a <- full_join(two_pi_mem_verbal, two_pi_mem_visual)
+pi_two_b <- full_join(pi_two_a, two_pi_impulse_control)
+pi_two_c <- full_join(pi_two_b, two_pi_reaction_time)
+two_pi <- full_join(pi_two_c, two_pi_visual_motor)
+
+# three baseline join - total of 2,570
+pi_three_a <- full_join(three_pi_mem_verbal, three_pi_mem_visual)
+pi_three_b <- full_join(pi_three_a, three_pi_impulse_control)
+pi_three_c <- full_join(pi_three_b, three_pi_reaction_time)
+three_pi <- full_join(pi_three_c, three_pi_visual_motor)
+
+# four baseline join - total of 966
+pi_four_a <- full_join(four_pi_mem_verbal, four_pi_mem_visual)
+pi_four_b <- full_join(pi_four_a, four_pi_impulse_control)
+pi_four_c <- full_join(pi_four_b, four_pi_reaction_time)
+four_pi <- full_join(pi_four_c, four_pi_visual_motor)
+
+
+# baseline and post-injury joins 
+
+one_bl_pi <- right_join(one_baselines, one_pi) %>% 
+  na.omit()
+
+two_bl_pi <- right_join(two_baselines, two_pi) %>% 
+  na.omit()
+
+three_bl_pi <- right_join(three_baselines, three_pi) %>% 
+  na.omit()
+
+four_bl_pi <- right_join(four_baselines, four_pi) %>% 
+  na.omit()
+
+```
+
+# Summary of Individuals who Completed Post-Injury IMPACT Testing {.tabset .tabset-fade .tabset-pills}
+
+```{r, include=FALSE}
+# total pi only 
+
+total_one_pi <- one_pi %>% 
+  summarize(length(passport_id))
+
+total_two_pi <- two_pi %>% 
+  summarize(length(passport_id))
+
+total_three_pi <- three_pi %>% 
+  summarize(length(passport_id))
+
+total_four_pi <- four_pi %>% 
+  summarize(length(passport_id))
+
+
+#total baseline and pi combined 
+total_one_bl_pi <- one_bl_pi %>% 
+  summarize(length(passport_id))
+
+total_two_bl_pi <- two_bl_pi %>% 
+  summarize(length(passport_id))
+
+total_three_bl_pi <- three_bl_pi %>% 
+  summarize(length(passport_id))
+
+total_four_bl_pi <- four_bl_pi %>% 
+  summarize(length(passport_id))
+
+
+t_sum_pi <- data.frame("Level" = c("One Post-Injury Assessment",
+                                  "Two Post-Injury Assessments",
+                                  "Three Post-Injury Assessments",
+                                  "Four Post-Injury Assessments"),
+                      "Total" = c(10041,
+                                  5766,
+                                  2570,
+                                  966))
+
+t_sum_bl_pi <- data.frame("Level" = c("One Baseline and Post-Injury",
+                                  "Two Baselines and Post_Injury",
+                                  "Three Baselines and Post-Injury",
+                                  "Four Baselines and Post-Injury"),
+                      "Total" = c(4540,
+                                  2498,
+                                  254,
+                                  21))
+
+pi_plot <- ggplot(t_sum_pi, aes(fct_reorder(Level, Total), Total)) +
+  geom_col(fill = "blue",
+           alpha = 0.7) +
+  coord_flip() +
+  geom_text(aes(Level, Total, label = Total),
+            hjust = 1.2,
+            nudge_y = 0.02,
+            size = 4,
+            color = "white") +
+  labs(x = "",
+       y = "Total",
+       title = "Total Individuals per Number of Post-Injury Test Administrations")
+
+bl_pi_plot <- ggplot(t_sum_bl_pi, aes(fct_reorder(Level, Total), Total)) +
+  geom_col(fill = "blue",
+           alpha = 0.7) +
+  coord_flip() +
+  geom_text(aes(Level, Total, label = Total),
+            hjust = -0.5,
+            nudge_y = 0.02,
+            size = 3) +
+  labs(x = "",
+       y = "Total",
+       title = "Total Individuals per Number of Baseline and Post-Injury\n Test Administrations")
+```
+
+## Table 1
+
+```{r, include=TRUE}
+t_sum_pi %>% 
+  reactable(columns = list(
+    Level = colDef(name = "Level"),
+    Total = colDef(name = "Total", 
+                   format = colFormat(separators = TRUE, suffix = " individuals"))),
+    striped = TRUE,
+    outlined = TRUE,
+    compact = TRUE,
+    highlight = TRUE,
+    bordered = TRUE)
+```
+
+## Plot 1
+
+```{r, include=TRUE, fig.height=12, fig.width=14}
+pi_plot
+```
+
+## Table 2
+
+```{r, include=TRUE}
+t_sum_bl_pi %>% 
+  reactable(columns = list(
+    Level = colDef(name = "Level"),
+    Total = colDef(name = "Total", 
+                   format = colFormat(separators = TRUE, suffix = " individuals"))),
+    striped = TRUE,
+    outlined = TRUE,
+    compact = TRUE,
+    highlight = TRUE,
+    bordered = TRUE)
+```
+
+## Plot 2
+
+```{r, include=TRUE, fig.height=12, fig.width=15}
+bl_pi_plot
+```
