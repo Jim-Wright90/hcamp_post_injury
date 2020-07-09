@@ -602,6 +602,40 @@ three_bl_pi <- right_join(three_baselines, three_pi) %>%
 four_bl_pi <- right_join(four_baselines, four_pi) %>% 
   na.omit()
 
+create_react <- function(df, var) {
+    df %>% 
+      summarize(Mean = mean({{var}}),
+                SD = sd({{var}}),
+                Min = min({{var}}),
+                Max = max({{var}}),
+                Total = length({{var}})) %>% 
+      mutate_if(is.numeric, round, 2) %>% 
+      reactable(columns = list(
+        Mean = colDef(format = colFormat(separators = TRUE)),
+        SD = colDef(format = colFormat(separators = TRUE)),
+        Min = colDef(format = colFormat(separators = TRUE)),
+        Max = colDef(format = colFormat(separators = TRUE)),
+        Total = colDef(format = colFormat(separators = TRUE, suffix = " individuals"))
+      ))
+}
+
+
+score_hist <- function(df, x) {
+  ggplot(df, aes({{x}})) +
+  geom_histogram(fill = "#56B4E9",
+                color = "white", 
+                alpha = 0.9,
+                bins = 25) +
+    labs(x = "Test Score",
+         y = "Number of Individuals")
+}
+
+box_p <- function(df, x, y) {
+  ggplot(df, aes({{x}}, {{y}})) +
+  geom_boxplot() +
+    labs(x = "",
+         y = "Score")
+}
 ```
 
 # Summary of Individuals who Completed Post-Injury IMPACT Testing {.tabset .tabset-fade .tabset-pills}
@@ -721,3 +755,1959 @@ t_sum_bl_pi %>%
 ```{r, include=TRUE, fig.height=12, fig.width=15}
 bl_pi_plot
 ```
+
+# Is there a significant difference in IMPACT test performance for individuals who completed baseline and post-injury assessments?
+
+## Verbal Memory
+
+### One Baseline and One Post-Injury Test {.tabset .tabset-fade .tabset-pills}
+
+A paired *T*-test was used to compare the mean verbal memory composite scores of individuals who completed one baseline and one post-injury assessment (*n* = 4,540). Performance on the verbal memory composite between baseline 1 and post-injury 1 assessments was determined to not be significant, *t*(4,539) = 1.837, *p* = .066. The mean baseline 1 score (*M* = 82.56) was not significantly different than the mean post-injury 1 score (*M* = 82.19).
+
+```{r, include=FALSE}
+one_bl_pi
+
+one_bl_pi_mem_verbal <- one_bl_pi %>% 
+  select(1, 2, 9, 3, 10)
+
+one_bl_pi_mem_verbal_long <- one_bl_pi_mem_verbal %>% 
+  pivot_longer(
+    cols = c(4:5),
+    names_to = "test",
+    names_prefix = "user_memory_composite_score_",
+    values_to = "score"
+  )
+
+bl_pi_mem_verbal_1 <- one_bl_pi_mem_verbal$user_memory_composite_score_verbal_1
+bl_pi_mem_verbal_2 <- one_bl_pi_mem_verbal$user_memory_composite_score_verbal_post_injury_1
+
+one_bl_pi_mem_verbal_res <- t.test(bl_pi_mem_verbal_1, bl_pi_mem_verbal_2, paired = TRUE)
+
+one_bl_pi_mem_verbal_res
+
+mean_2(one_bl_pi_mem_verbal$user_memory_composite_score_verbal_1)
+mean_2(one_bl_pi_mem_verbal$user_memory_composite_score_verbal_post_injury_1)
+```
+
+#### Boxplot
+```{r, include=TRUE}
+box_p(one_bl_pi_mem_verbal_long, test, score) +
+  stat_compare_means(method = "t.test", paired = TRUE, hjust = -0.5)
+```
+
+#### *T*-Test Results
+```{r, include=TRUE}
+one_bl_pi_mem_verbal_res
+```
+
+#### Baseline Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_mem_verbal, user_memory_composite_score_verbal_1)
+```
+
+#### Baseline Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_mem_verbal, user_memory_composite_score_verbal_1)
+```
+
+#### Post-Injury Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_1)
+```
+
+#### Post-Injury Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_1)
+```
+
+### Two Baseline and Two Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed two baseline and two post-injury assessments (*n* = 2,498), performance on the verbal memory composite score was statistically significantly different, *F*(2.82, 7,030.62) = 244.45, *p* < .0001, generalized eta squared = 0.05. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. All pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their highest verbal memory score on the second baseline administration (*M* = 85.57) and their lowest score on the first post-injury administration (*M* = 78.60).
+
+
+```{r, include=FALSE}
+two_bl_pi
+
+two_bl_pi_mem_verbal <- two_bl_pi %>% 
+  select(1, 2, 3, 15, 16, 4, 5, 17, 18)
+
+two_bl_pi_mem_verbal_long <- two_bl_pi_mem_verbal %>% 
+  pivot_longer(
+    cols = c(6:9),
+    names_to = "test",
+    names_prefix = "user_memory_composite_score_",
+    values_to = "score"
+  )
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_mem_verbal_long, test, score)
+```
+
+#### Outliers 
+
+Of the 139 scores identified to be outliers, 5 are considered extreme.  
+
+```{r, include=FALSE}
+two_bl_pi_mem_verbal_outliers <- two_bl_pi_mem_verbal_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:6))
+
+two_bl_pi_mem_verbal_outliers %>% 
+  count(is.outlier)
+
+two_bl_pi_mem_verbal_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+two_bl_pi_mem_verbal_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed. 
+
+```{r, include=TRUE, fig.width=10}
+ggplot(two_bl_pi_mem_verbal_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+two_bl_pi_mem_verbal_res <- anova_test(two_bl_pi_mem_verbal_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(two_bl_pi_mem_verbal_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+two_bl_pi_mem_verbal_pwc <- two_bl_pi_mem_verbal_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+two_bl_pi_mem_verbal_pwc
+```
+
+```{r, include=TRUE}
+two_bl_pi_mem_verbal_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+
+```{r, include=FALSE}
+two_bl_pi_mem_verbal_pwc <- two_bl_pi_mem_verbal_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_mem_verbal_long, test, score) +
+  stat_pvalue_manual(two_bl_pi_mem_verbal_pwc) +
+  labs(
+    subtitle = get_test_label(two_bl_pi_mem_verbal_res, detailed = TRUE),
+    caption = get_pwc_label(two_bl_pi_mem_verbal_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_mem_verbal, user_memory_composite_score_verbal_1)
+```
+
+#### Baseline 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_mem_verbal, user_memory_composite_score_verbal_1)
+```
+
+#### Post-Injury 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_1)
+```
+
+#### Baseline 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_mem_verbal, user_memory_composite_score_verbal_2)
+```
+
+#### Baseline 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_mem_verbal, user_memory_composite_score_verbal_2)
+```
+
+#### Post-Injury 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_2)
+```
+
+### Three Baseline and Three Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed three baseline and three post-injury assessments (*n* = 254), performance on the verbal memory composite score was statistically significantly different across tests, *F*(4.2, 1,061.98) = 54.55, *p* < .0001, generalized eta squared = 0.11. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Twelve out of 15 pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their highest verbal memory score on the third baseline administration (*M* = 87.50) and their lowest score on the first post-injury administration (*M* = 75.24). The following pairwise comparisons were not significant: Baseline 1 and Post-Injury 3, Baseline 2 and Baseline 3, and Baseline 2 and Post-Injury 3.
+
+
+```{r, include=FALSE}
+three_bl_pi
+
+three_bl_pi_mem_verbal <- three_bl_pi %>% 
+  select(1, 2, 3, 4, 21, 22, 23, 5, 6, 7, 24, 25, 26)
+
+three_bl_pi_mem_verbal_long <- three_bl_pi_mem_verbal %>% 
+  pivot_longer(
+    cols = c(8:13),
+    names_to = "test",
+    names_prefix = "user_memory_composite_score_verbal_",
+    values_to = "score"
+  )
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_mem_verbal_long, test, score)
+```
+
+#### Outliers 
+
+Of the 24 scores identified to be outliers, 1 is considered extreme.  
+
+```{r, include=FALSE}
+three_bl_pi_mem_verbal_outliers <- three_bl_pi_mem_verbal_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:8))
+
+three_bl_pi_mem_verbal_outliers %>% 
+  count(is.outlier)
+
+three_bl_pi_mem_verbal_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+three_bl_pi_mem_verbal_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed. 
+
+```{r, include=TRUE, fig.width=10}
+ggplot(three_bl_pi_mem_verbal_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+three_bl_pi_mem_verbal_res <- anova_test(three_bl_pi_mem_verbal_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(three_bl_pi_mem_verbal_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+three_bl_pi_mem_verbal_pwc <- three_bl_pi_mem_verbal_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+three_bl_pi_mem_verbal_pwc
+```
+
+```{r, include=TRUE}
+three_bl_pi_mem_verbal_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+```{r, include=FALSE}
+three_bl_pi_mem_verbal_pwc <- three_bl_pi_mem_verbal_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_mem_verbal_long, test, score) +
+  stat_pvalue_manual(three_bl_pi_mem_verbal_pwc) +
+  labs(
+    subtitle = get_test_label(three_bl_pi_mem_verbal_res, detailed = TRUE),
+    caption = get_pwc_label(three_bl_pi_mem_verbal_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_1)
+```
+
+#### Baseline 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_1)
+```
+
+#### Post-Injury 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_1)
+```
+
+#### Baseline 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_2)
+```
+
+#### Baseline 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_2)
+```
+
+#### Post-Injury 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_2)
+```
+
+#### Baseline 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_3)
+```
+
+#### Baseline 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_3)
+```
+
+#### Post-Injury 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_3)
+```
+
+#### Post-injury 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_verbal, user_memory_composite_score_verbal_post_injury_3)
+```
+
+
+
+
+## Visual Memory
+
+### One Baseline and One Post-Injury Test {.tabset .tabset-fade .tabset-pills}
+
+A paired *T*-test was used to compare the mean visual memory composite scores of individuals who completed one baseline and one post-injury assessment (*n* = 4,540). Performance on the visual memory composite between baseline 1 and post-injury 1 assessments was determined to not be significant, *t*(4,539) = -0.497, *p* = .62. The mean baseline 1 score (*M* = 72.16) was not significantly different than the mean post-injury 1 score (*M* = 72.27).
+
+```{r, include=FALSE}
+one_bl_pi
+
+one_bl_pi_mem_visual <- one_bl_pi %>% 
+  select(1, 2, 9, 4, 11)
+
+one_bl_pi_mem_visual_long <- one_bl_pi_mem_visual %>% 
+  pivot_longer(
+    cols = c(4:5),
+    names_to = "test",
+    names_prefix = "user_memory_composite_score_",
+    values_to = "score"
+  )
+
+bl_pi_mem_visual_1 <- one_bl_pi_mem_visual$user_memory_composite_score_visual_1
+bl_pi_mem_visual_2 <- one_bl_pi_mem_visual$user_memory_composite_score_visual_post_injury_1
+
+one_bl_pi_mem_visual_res <- t.test(bl_pi_mem_visual_1, bl_pi_mem_visual_2, paired = TRUE)
+
+one_bl_pi_mem_visual_res
+
+mean_2(one_bl_pi_mem_visual$user_memory_composite_score_visual_1)
+mean_2(one_bl_pi_mem_visual$user_memory_composite_score_visual_post_injury_1)
+```
+
+#### Boxplot
+```{r, include=TRUE}
+box_p(one_bl_pi_mem_visual_long, test, score) +
+  stat_compare_means(method = "t.test", paired = TRUE, hjust = -0.5)
+```
+
+#### *T*-Test Results
+```{r, include=TRUE}
+one_bl_pi_mem_visual_res
+```
+
+#### Baseline Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_mem_visual, user_memory_composite_score_visual_1)
+```
+
+#### Baseline Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_mem_verbal, user_memory_composite_score_verbal_1)
+```
+
+#### Post-Injury Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_1)
+```
+
+#### Post-Injury Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_1)
+```
+
+
+### Two Baseline and Two Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed two baseline and two post-injury assessments (*n* = 2,498), performance on the visual memory composite score was statistically significantly different, *F*(2.93, 7,309.61) = 226.65, *p* < .0001, generalized eta squared = 0.04. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Five out of six pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their highest visual memory score on the second baseline administration (*M* = 76.53) and their lowest score on the first post-injury administration (*M* = 68.80). Average performance on Baseline 1 (*M* = 72.11) and Post-Injury 2 (*M* = 72.31) was not significantly different. 
+
+
+```{r, include=FALSE}
+two_bl_pi
+
+two_bl_pi_mem_visual <- two_bl_pi %>% 
+  select(1, 2, 3, 15, 16, 6, 7, 19, 20)
+
+two_bl_pi_mem_visual_long <- two_bl_pi_mem_visual %>% 
+  pivot_longer(
+    cols = c(6:9),
+    names_to = "test",
+    names_prefix = "user_memory_composite_score_",
+    values_to = "score"
+  )
+
+mean_2(two_bl_pi_mem_visual$user_memory_composite_score_visual_1)
+mean_2(two_bl_pi_mem_visual$user_memory_composite_score_visual_2)
+mean_2(two_bl_pi_mem_visual$user_memory_composite_score_visual_post_injury_1)
+mean_2(two_bl_pi_mem_visual$user_memory_composite_score_visual_post_injury_2)
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_mem_visual_long, test, score)
+```
+
+#### Outliers 
+
+Of the 72 scores identified to be outliers, none are considered extreme.  
+
+```{r, include=FALSE}
+two_bl_pi_mem_visual_outliers <- two_bl_pi_mem_visual_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:6))
+
+two_bl_pi_mem_visual_outliers %>% 
+  count(is.outlier)
+
+two_bl_pi_mem_visual_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+two_bl_pi_mem_visual_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed. 
+
+```{r, include=TRUE, fig.width=10}
+ggplot(two_bl_pi_mem_visual_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+two_bl_pi_mem_visual_res <- anova_test(two_bl_pi_mem_visual_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(two_bl_pi_mem_visual_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+two_bl_pi_mem_visual_pwc <- two_bl_pi_mem_visual_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+two_bl_pi_mem_visual_pwc
+```
+
+```{r, include=TRUE}
+two_bl_pi_mem_visual_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+
+```{r, include=FALSE}
+two_bl_pi_mem_visual_pwc <- two_bl_pi_mem_visual_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_mem_visual_long, test, score) +
+  stat_pvalue_manual(two_bl_pi_mem_visual_pwc) +
+  labs(
+    subtitle = get_test_label(two_bl_pi_mem_visual_res, detailed = TRUE),
+    caption = get_pwc_label(two_bl_pi_mem_visual_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_mem_visual, user_memory_composite_score_visual_1)
+```
+
+#### Baseline 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_mem_visual, user_memory_composite_score_visual_1)
+```
+
+#### Post-Injury 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_1)
+```
+
+#### Baseline 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_mem_visual, user_memory_composite_score_visual_2)
+```
+
+#### Baseline 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_mem_visual, user_memory_composite_score_visual_2)
+```
+
+#### Post-Injury 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_2)
+```
+
+
+### Three Baseline and Three Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed three baseline and three post-injury assessments (*n* = 254), performance on the visual memory composite score was statistically significantly different across tests, *F*(4.7, 1,189.47) = 51.78, *p* < .0001, generalized eta squared = 0.09. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Twelve out of 15 pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their highest visual memory score on the third baseline administration (*M* = 78.76) and their lowest score on the first post-injury administration (*M* = 66.08). The following pairwise comparisons were not significant: Baseline 1 and Post-Injury 3, Baseline 2 and Baseline 3, and Post-Injury 1 and Post-Injury 2.
+
+
+```{r, include=FALSE}
+three_bl_pi
+
+three_bl_pi_mem_visual <- three_bl_pi %>% 
+  select(1, 2, 3, 4, 21, 22, 23, 8, 9, 10, 27, 28, 29)
+
+three_bl_pi_mem_visual_long <- three_bl_pi_mem_visual %>% 
+  pivot_longer(
+    cols = c(8:13),
+    names_to = "test",
+    names_prefix = "user_memory_composite_score_visual_",
+    values_to = "score"
+  )
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_mem_visual_long, test, score)
+```
+
+#### Outliers 
+
+Of the 12 scores identified to be outliers, none are considered extreme.  
+
+```{r, include=FALSE}
+three_bl_pi_mem_visual_outliers <- three_bl_pi_mem_visual_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:8))
+
+three_bl_pi_mem_visual_outliers %>% 
+  count(is.outlier)
+
+three_bl_pi_mem_visual_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+three_bl_pi_mem_visual_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed. 
+
+```{r, include=TRUE, fig.width=10}
+ggplot(three_bl_pi_mem_visual_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+three_bl_pi_mem_visual_res <- anova_test(three_bl_pi_mem_visual_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(three_bl_pi_mem_visual_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+three_bl_pi_mem_visual_pwc <- three_bl_pi_mem_visual_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+three_bl_pi_mem_visual_pwc
+```
+
+```{r, include=TRUE}
+three_bl_pi_mem_visual_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+```{r, include=FALSE}
+three_bl_pi_mem_visual_pwc <- three_bl_pi_mem_visual_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_mem_visual_long, test, score) +
+  stat_pvalue_manual(three_bl_pi_mem_visual_pwc) +
+  labs(
+    subtitle = get_test_label(three_bl_pi_mem_visual_res, detailed = TRUE),
+    caption = get_pwc_label(three_bl_pi_mem_visual_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_visual, user_memory_composite_score_visual_1)
+```
+
+#### Baseline 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_visual, user_memory_composite_score_visual_1)
+```
+
+#### Post-Injury 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_1)
+```
+
+#### Baseline 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_visual, user_memory_composite_score_visual_2)
+```
+
+#### Baseline 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_visual, user_memory_composite_score_visual_2)
+```
+
+#### Post-Injury 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_2)
+```
+
+#### Baseline 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_visual, user_memory_composite_score_visual_3)
+```
+
+#### Baseline 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_visual, user_memory_composite_score_visual_3)
+```
+
+#### Post-Injury 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_3)
+```
+
+#### Post-injury 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_mem_visual, user_memory_composite_score_visual_post_injury_3)
+```
+
+
+## Impulse Control
+
+### One Baseline and One Post-Injury Test {.tabset .tabset-fade .tabset-pills}
+
+A paired *T*-test was used to compare the mean impulse control composite scores of individuals who completed one baseline and one post-injury assessment (*n* = 4,540). Performance on the impulse control composite between baseline 1 and post-injury 1 assessments was determined to not be significant, *t*(4,539) = -0.850, *p* = .395. The mean baseline 1 score (*M* = 7.73) was not significantly different than the mean post-injury 1 score (*M* = 7.82).
+
+```{r, include=FALSE}
+one_bl_pi
+
+one_bl_pi_impulse_control <- one_bl_pi %>% 
+  select(1, 2, 9, 5, 12)
+
+one_bl_pi_impulse_control_long <- one_bl_pi_impulse_control %>% 
+  pivot_longer(
+    cols = c(4:5),
+    names_to = "test",
+    names_prefix = "user_impulse_control_composite_score_",
+    values_to = "score"
+  )
+
+bl_pi_impulse_control_1 <- one_bl_pi_impulse_control$user_impulse_control_composite_score_1
+bl_pi_impulse_control_2 <- one_bl_pi_impulse_control$user_impulse_control_composite_score_post_injury_1
+
+one_bl_pi_impulse_control_res <- t.test(bl_pi_impulse_control_1,
+                                        bl_pi_impulse_control_2,
+                                        paired = TRUE)
+
+one_bl_pi_impulse_control_res
+
+mean_2(one_bl_pi_impulse_control$user_impulse_control_composite_score_1)
+mean_2(one_bl_pi_impulse_control$user_impulse_control_composite_score_post_injury_1)
+```
+
+#### Boxplot
+```{r, include=TRUE}
+box_p(one_bl_pi_impulse_control_long, test, score) +
+  stat_compare_means(method = "t.test", paired = TRUE, hjust = -0.5)
+```
+
+#### *T*-Test Results
+```{r, include=TRUE}
+one_bl_pi_impulse_control_res
+```
+
+#### Baseline Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_impulse_control, user_impulse_control_composite_score_1)
+```
+
+#### Baseline Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_impulse_control, user_impulse_control_composite_score_1)
+```
+
+#### Post-Injury Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_1)
+```
+
+#### Post-Injury Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_1)
+```
+
+
+### Two Baseline and Two Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed two baseline and two post-injury assessments (*n* = 2,498), performance on the impulse control composite score was statistically significantly different, *F*(2.66, 6,633.91) = 17, *p* < .0001, generalized eta squared = 0.003. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Three out of six pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their highest impulse control score on the first post-injury administration (*M* = 8.50) and their lowest score on the second post-injury administration (*M* = 7.53). The following pairwise comparisons were not not significant: Baseline 1 and Baseline 2, Baseline 1 and Post-Injury 2, and Baseline 2 and Post-Injury 2. Performance on Post-Injury 1 was signficiantly different from all other comparisons. 
+
+```{r, include=FALSE}
+two_bl_pi
+
+two_bl_pi_impulse_control <- two_bl_pi %>% 
+  select(1, 2, 3, 15, 16, 8, 9, 21, 22)
+
+two_bl_pi_impulse_control_long <- two_bl_pi_impulse_control %>% 
+  pivot_longer(
+    cols = c(6:9),
+    names_to = "test",
+    names_prefix = "user_impulse_control_composite_score_",
+    values_to = "score"
+  )
+
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_impulse_control_long, test, score)
+```
+
+#### Outliers 
+
+Of the 446 scores identified to be outliers, 78 are considered extreme.  
+
+```{r, include=FALSE}
+two_bl_pi_impulse_control_outliers <- two_bl_pi_impulse_control_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:6))
+
+two_bl_pi_impulse_control_outliers %>% 
+  count(is.outlier)
+
+two_bl_pi_impulse_control_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+two_bl_pi_impulse_control_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed, although extreme outliers on the Post-Injury 1 assessment are concerning. 
+
+```{r, include=TRUE, fig.width=10}
+ggplot(two_bl_pi_impulse_control_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+two_bl_pi_impulse_control_res <- anova_test(two_bl_pi_impulse_control_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(two_bl_pi_impulse_control_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+two_bl_pi_impulse_control_pwc <- two_bl_pi_impulse_control_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+two_bl_pi_impulse_control_pwc
+```
+
+```{r, include=TRUE}
+two_bl_pi_impulse_control_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+
+```{r, include=FALSE}
+two_bl_pi_impulse_control_pwc <- two_bl_pi_impulse_control_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_impulse_control_long, test, score) +
+  stat_pvalue_manual(two_bl_pi_impulse_control_pwc) +
+  labs(
+    subtitle = get_test_label(two_bl_pi_impulse_control_res, detailed = TRUE),
+    caption = get_pwc_label(two_bl_pi_impulse_control_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_impulse_control, user_impulse_control_composite_score_1)
+```
+
+#### Baseline 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_impulse_control, user_impulse_control_composite_score_1)
+```
+
+#### Post-Injury 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_1)
+```
+
+#### Baseline 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_impulse_control, user_impulse_control_composite_score_2)
+```
+
+#### Baseline 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_impulse_control, user_impulse_control_composite_score_2)
+```
+
+#### Post-Injury 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_2)
+```
+
+
+### Three Baseline and Three Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed three baseline and three post-injury assessments (*n* = 254), performance on the impulse control composite score was statistically significantly different across tests, *F*(3.73, 943.1) = 2.99, *p* = .021, generalized eta squared = 0.007. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Only 2 out of 15 pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their highest impulse control score on the first post-injury administration (*M* = 9.17) and their lowest score on the first baseline administration (*M* = 7.5). Only the differences in scores between Baseline 1 and Post-Injury 1 and Baseline 2 and Post-Injury 1 were significant.
+
+
+```{r, include=FALSE}
+three_bl_pi
+
+three_bl_pi_impulse_control <- three_bl_pi %>% 
+  select(1, 2, 3, 4, 21, 22, 23, 11, 12, 13, 30, 31, 32)
+
+three_bl_pi_impulse_control_long <- three_bl_pi_impulse_control %>% 
+  pivot_longer(
+    cols = c(8:13),
+    names_to = "test",
+    names_prefix = "user_impulse_control_composite_score_",
+    values_to = "score"
+  )
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_impulse_control_long, test, score)
+```
+
+#### Outliers 
+
+Of the 67 scores identified to be outliers, 17 are considered extreme.  
+
+```{r, include=FALSE}
+three_bl_pi_impulse_control_outliers <- three_bl_pi_impulse_control_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:8))
+
+three_bl_pi_impulse_control_outliers %>% 
+  count(is.outlier)
+
+three_bl_pi_impulse_control_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+three_bl_pi_impulse_control_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed. 
+
+```{r, include=TRUE, fig.width=10}
+ggplot(three_bl_pi_impulse_control_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+three_bl_pi_impulse_control_res <- anova_test(three_bl_pi_impulse_control_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(three_bl_pi_impulse_control_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+three_bl_pi_impulse_control_pwc <- three_bl_pi_impulse_control_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+three_bl_pi_impulse_control_pwc
+```
+
+```{r, include=TRUE}
+three_bl_pi_impulse_control_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+```{r, include=FALSE}
+three_bl_pi_impulse_control_pwc <- three_bl_pi_impulse_control_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_impulse_control_long, test, score) +
+  stat_pvalue_manual(three_bl_pi_impulse_control_pwc) +
+  labs(
+    subtitle = get_test_label(three_bl_pi_impulse_control_res, detailed = TRUE),
+    caption = get_pwc_label(three_bl_pi_impulse_control_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_impulse_control, user_impulse_control_composite_score_1)
+```
+
+#### Baseline 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_impulse_control, user_impulse_control_composite_score_1)
+```
+
+#### Post-Injury 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_1)
+```
+
+#### Baseline 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_impulse_control, user_impulse_control_composite_score_2)
+```
+
+#### Baseline 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_impulse_control, user_impulse_control_composite_score_2)
+```
+
+#### Post-Injury 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_2)
+```
+
+#### Baseline 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_impulse_control, user_impulse_control_composite_score_3)
+```
+
+#### Baseline 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_impulse_control, user_impulse_control_composite_score_3)
+```
+
+#### Post-Injury 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_3)
+```
+
+#### Post-injury 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_impulse_control, user_impulse_control_composite_score_post_injury_3)
+```
+
+
+
+## Reaction Time
+
+### One Baseline and One Post-Injury Test {.tabset .tabset-fade .tabset-pills}
+
+A paired *T*-test was used to compare the mean reaction time composite scores of individuals who completed one baseline and one post-injury assessment (*n* = 4,540). Performance on the reaction time composite between baseline 1 and post-injury 1 assessments was determined to be significantly different with individuals achieving a better reaction time score on the baseline assessment, *t*(4,539) = -3.893, *p* = .0001. The mean baseline 1 score (*M* = 0.64) was significantly different than the mean post-injury 1 score (*M* = 0.65).
+
+```{r, include=FALSE}
+one_bl_pi
+
+one_bl_pi_reaction_time <- one_bl_pi %>% 
+  select(1, 2, 9, 6, 13)
+
+one_bl_pi_reaction_time_long <- one_bl_pi_reaction_time %>% 
+  pivot_longer(
+    cols = c(4:5),
+    names_to = "test",
+    names_prefix = "user_reaction_time_composite_score_",
+    values_to = "score"
+  )
+
+bl_pi_reaction_time_1 <- one_bl_pi_reaction_time$user_reaction_time_composite_score_1
+bl_pi_reaction_time_2 <- one_bl_pi_reaction_time$user_reaction_time_composite_score_post_injury_1
+
+one_bl_pi_reaction_time_res <- t.test(bl_pi_reaction_time_1,
+                                        bl_pi_reaction_time_2,
+                                        paired = TRUE)
+
+one_bl_pi_reaction_time_res
+
+mean_2(one_bl_pi_reaction_time$user_reaction_time_composite_score_1)
+mean_2(one_bl_pi_reaction_time$user_reaction_time_composite_score_post_injury_1)
+```
+
+#### Boxplot
+```{r, include=TRUE}
+box_p(one_bl_pi_reaction_time_long, test, score) +
+  stat_compare_means(method = "t.test", paired = TRUE, hjust = -0.5)
+```
+
+#### *T*-Test Results
+```{r, include=TRUE}
+one_bl_pi_reaction_time_res
+```
+
+#### Baseline Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_reaction_time, user_reaction_time_composite_score_1)
+```
+
+#### Baseline Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_reaction_time, user_reaction_time_composite_score_1)
+```
+
+#### Post-Injury Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_1)
+```
+
+#### Post-Injury Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_1)
+```
+
+
+### Two Baseline and Two Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed two baseline and two post-injury assessments (*n* = 2,498), performance on the reaction time composite score was statistically significantly different, *F*(2.55, 6,365.51) = 195.75, *p* < .0001, generalized eta squared = 0.04. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Six out of six pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their best reaction time score on the second baseline administration (*M* = 0.61) and their lowest score on the first post-injury administration (*M* = 0.67). 
+
+```{r, include=FALSE}
+two_bl_pi
+
+two_bl_pi_reaction_time <- two_bl_pi %>% 
+  select(1, 2, 3, 15, 16, 10, 11, 23, 24)
+
+two_bl_pi_reaction_time_long <- two_bl_pi_reaction_time %>% 
+  pivot_longer(
+    cols = c(6:9),
+    names_to = "test",
+    names_prefix = "user_reaction_time_composite_score_",
+    values_to = "score"
+  )
+
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_reaction_time_long, test, score)
+```
+
+#### Outliers 
+
+Of the 343 scores identified to be outliers, 84 are considered extreme.  
+
+```{r, include=FALSE}
+two_bl_pi_reaction_time_outliers <- two_bl_pi_reaction_time_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:6))
+
+two_bl_pi_reaction_time_outliers %>% 
+  count(is.outlier)
+
+two_bl_pi_reaction_time_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+two_bl_pi_reaction_time_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed.
+
+```{r, include=TRUE, fig.width=10}
+ggplot(two_bl_pi_reaction_time_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+two_bl_pi_reaction_time_res <- anova_test(two_bl_pi_reaction_time_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(two_bl_pi_reaction_time_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+two_bl_pi_reaction_time_pwc <- two_bl_pi_reaction_time_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+two_bl_pi_reaction_time_pwc
+```
+
+```{r, include=TRUE}
+two_bl_pi_reaction_time_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+
+```{r, include=FALSE}
+two_bl_pi_reaction_time_pwc <- two_bl_pi_reaction_time_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_reaction_time_long, test, score) +
+  stat_pvalue_manual(two_bl_pi_reaction_time_pwc) +
+  labs(
+    subtitle = get_test_label(two_bl_pi_reaction_time_res, detailed = TRUE),
+    caption = get_pwc_label(two_bl_pi_reaction_time_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_reaction_time, user_reaction_time_composite_score_1)
+```
+
+#### Baseline 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_reaction_time, user_reaction_time_composite_score_1)
+```
+
+#### Post-Injury 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_1)
+```
+
+#### Baseline 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_reaction_time, user_reaction_time_composite_score_2)
+```
+
+#### Baseline 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_reaction_time, user_reaction_time_composite_score_2)
+```
+
+#### Post-Injury 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_2)
+```
+
+
+### Three Baseline and Three Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed three baseline and three post-injury assessments (*n* = 254), performance on the reaction time composite score was statistically significantly different across tests, *F*(3.6, 911.29) = 41.72, *p* < .0001, generalized eta squared = 0.09. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Twelve out of 15 pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their best reaction time score on the third baseline administration (*M* = 0.60) and their lowest score on the first post-injury administration (*M* = 0.70). The following comparisons were not significantly different: Baseline 3 and Post-Injury 3, Baseline 2 and Post-Injury 3, and Baseline 1 and Post-Injury 2. 
+
+
+```{r, include=FALSE}
+three_bl_pi
+
+three_bl_pi_reaction_time <- three_bl_pi %>% 
+  select(1, 2, 3, 4, 21, 22, 23, 14, 15, 16, 33, 34, 35)
+
+three_bl_pi_reaction_time_long <- three_bl_pi_reaction_time %>% 
+  pivot_longer(
+    cols = c(8:13),
+    names_to = "test",
+    names_prefix = "user_reaction_time_composite_score_",
+    values_to = "score"
+  )
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_reaction_time_long, test, score)
+```
+
+#### Outliers 
+
+Of the 36 scores identified to be outliers, 7 are considered extreme.  
+
+```{r, include=FALSE}
+three_bl_pi_reaction_time_outliers <- three_bl_pi_reaction_time_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:8))
+
+three_bl_pi_reaction_time_outliers %>% 
+  count(is.outlier)
+
+three_bl_pi_reaction_time_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+three_bl_pi_reaction_time_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed. 
+
+```{r, include=TRUE, fig.width=10}
+ggplot(three_bl_pi_reaction_time_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+three_bl_pi_reaction_time_res <- anova_test(three_bl_pi_reaction_time_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(three_bl_pi_reaction_time_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+three_bl_pi_reaction_time_pwc <- three_bl_pi_reaction_time_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+three_bl_pi_reaction_time_pwc
+```
+
+```{r, include=TRUE}
+three_bl_pi_reaction_time_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+```{r, include=FALSE}
+three_bl_pi_reaction_time_pwc <- three_bl_pi_reaction_time_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_reaction_time_long, test, score) +
+  stat_pvalue_manual(three_bl_pi_reaction_time_pwc) +
+  labs(
+    subtitle = get_test_label(three_bl_pi_reaction_time_res, detailed = TRUE),
+    caption = get_pwc_label(three_bl_pi_reaction_time_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_reaction_time, user_reaction_time_composite_score_1)
+```
+
+#### Baseline 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_reaction_time, user_reaction_time_composite_score_1)
+```
+
+#### Post-Injury 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_1)
+```
+
+#### Baseline 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_reaction_time, user_reaction_time_composite_score_2)
+```
+
+#### Baseline 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_reaction_time, user_reaction_time_composite_score_2)
+```
+
+#### Post-Injury 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_2)
+```
+
+#### Baseline 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_reaction_time, user_reaction_time_composite_score_3)
+```
+
+#### Baseline 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_reaction_time, user_reaction_time_composite_score_3)
+```
+
+#### Post-Injury 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_3)
+```
+
+#### Post-injury 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_reaction_time, user_reaction_time_composite_score_post_injury_3)
+```
+
+
+
+## Visual Motor
+
+### One Baseline and One Post-Injury Test {.tabset .tabset-fade .tabset-pills}
+
+A paired *T*-test was used to compare the mean visual motor composite scores of individuals who completed one baseline and one post-injury assessment (*n* = 4,540). Performance on the visual motor composite between baseline 1 and post-injury 1 assessments was determined to be significantly different with individuals achieving a better visual motor score on the post-injury assessment, *t*(4,539) = -19.244, *p* < .0001. The mean baseline 1 score (*M* = 34.11) was significantly different than the mean post-injury 1 score (*M* = 36.04).
+
+```{r, include=FALSE}
+one_bl_pi
+
+one_bl_pi_visual_motor <- one_bl_pi %>% 
+  select(1, 2, 9, 7, 14)
+
+one_bl_pi_visual_motor_long <- one_bl_pi_visual_motor %>% 
+  pivot_longer(
+    cols = c(4:5),
+    names_to = "test",
+    names_prefix = "user_visual_motor_composite_score_",
+    values_to = "score"
+  )
+
+bl_pi_visual_motor_1 <- one_bl_pi_visual_motor$user_visual_motor_composite_score_1
+bl_pi_visual_motor_2 <- one_bl_pi_visual_motor$user_visual_motor_composite_score_post_injury_1
+
+one_bl_pi_visual_motor_res <- t.test(bl_pi_visual_motor_1,
+                                        bl_pi_visual_motor_2,
+                                        paired = TRUE)
+
+one_bl_pi_visual_motor_res
+
+mean_2(one_bl_pi_visual_motor$user_visual_motor_composite_score_1)
+mean_2(one_bl_pi_visual_motor$user_visual_motor_composite_score_post_injury_1)
+```
+
+#### Boxplot
+```{r, include=TRUE}
+box_p(one_bl_pi_visual_motor_long, test, score) +
+  stat_compare_means(method = "t.test", paired = TRUE, hjust = -0.5)
+```
+
+#### *T*-Test Results
+```{r, include=TRUE}
+one_bl_pi_visual_motor_res
+```
+
+#### Baseline Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_visual_motor, user_visual_motor_composite_score_1)
+```
+
+#### Baseline Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_visual_motor, user_visual_motor_composite_score_1)
+```
+
+#### Post-Injury Summary
+```{r, include=TRUE}
+create_react(one_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_1)
+```
+
+#### Post-Injury Histogram
+```{r, include=TRUE}
+score_hist(one_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_1)
+```
+
+
+### Two Baseline and Two Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed two baseline and two post-injury assessments (*n* = 2,498), performance on the visual motor composite score was statistically significantly different, *F*(2.61, 6,514.32) = 522.6, *p* < .0001, generalized eta squared = 0.06. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Six out of six pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their highest visual motor score on the second baseline administration (*M* = 37.98) and their lowest score on the first baseline administration (*M* = 33.92). 
+
+```{r, include=FALSE}
+two_bl_pi
+
+two_bl_pi_visual_motor <- two_bl_pi %>% 
+  select(1, 2, 3, 15, 16, 12, 13, 25, 26)
+
+two_bl_pi_visual_motor_long <- two_bl_pi_visual_motor %>% 
+  pivot_longer(
+    cols = c(6:9),
+    names_to = "test",
+    names_prefix = "user_visual_motor_composite_score_",
+    values_to = "score"
+  )
+
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_visual_motor_long, test, score)
+```
+
+#### Outliers 
+
+Of the 119 scores identified to be outliers, none are considered extreme.  
+
+```{r, include=FALSE}
+two_bl_pi_visual_motor_outliers <- two_bl_pi_visual_motor_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:6))
+
+two_bl_pi_visual_motor_outliers %>% 
+  count(is.outlier)
+
+two_bl_pi_visual_motor_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+two_bl_pi_visual_motor_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed.
+
+```{r, include=TRUE, fig.width=10}
+ggplot(two_bl_pi_visual_motor_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+two_bl_pi_visual_motor_res <- anova_test(two_bl_pi_visual_motor_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(two_bl_pi_visual_motor_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+two_bl_pi_visual_motor_pwc <- two_bl_pi_visual_motor_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+two_bl_pi_visual_motor_pwc
+```
+
+```{r, include=TRUE}
+two_bl_pi_visual_motor_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+
+```{r, include=FALSE}
+two_bl_pi_visual_motor_pwc <- two_bl_pi_visual_motor_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=10}
+box_p(two_bl_pi_visual_motor_long, test, score) +
+  stat_pvalue_manual(two_bl_pi_visual_motor_pwc) +
+  labs(
+    subtitle = get_test_label(two_bl_pi_visual_motor_res, detailed = TRUE),
+    caption = get_pwc_label(two_bl_pi_visual_motor_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_visual_motor, user_visual_motor_composite_score_1)
+```
+
+#### Baseline 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_visual_motor, user_visual_motor_composite_score_1)
+```
+
+#### Post-Injury 1 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_1)
+```
+
+#### Baseline 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_visual_motor, user_visual_motor_composite_score_2)
+```
+
+#### Baseline 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_visual_motor, user_visual_motor_composite_score_2)
+```
+
+#### Post-Injury 2 Summary
+
+```{r, include=TRUE}
+create_react(two_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+
+```{r, include=TRUE}
+score_hist(two_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_2)
+```
+
+
+### Three Baseline and Three Post-Injury Tests {.tabset .tabset-fade .tabset-pills}
+
+For individuals who completed three baseline and three post-injury assessments (*n* = 254), performance on the visual motor composite score was statistically significantly different across tests, *F*(3.82, 967.55) = 82.59, *p* < .0001, generalized eta squared = 0.1. 
+
+All possible pairwise comparisons were evaluated using the *Bonferroni* procedure to control family-wise Type I error. Thirteen out of 15 pairwise comparisons were statistically significantly different (*p* < .05). On average, individuals achieved their highest visual motor score on the third baseline administration (*M* = 39.42) and their lowest score on the first post-injury administration (*M* = 32.67). The following comparisons were not significantly different: Baseline 2 and Post-Injury 3 and Baseline 1 and Post-Injury 1. 
+
+
+```{r, include=FALSE}
+three_bl_pi
+
+three_bl_pi_visual_motor <- three_bl_pi %>% 
+  select(1, 2, 3, 4, 21, 22, 23, 17, 18, 19, 36, 37, 38)
+
+three_bl_pi_visual_motor_long <- three_bl_pi_visual_motor %>% 
+  pivot_longer(
+    cols = c(8:13),
+    names_to = "test",
+    names_prefix = "user_visual_motor_composite_score_",
+    values_to = "score"
+  )
+```
+
+#### Boxplot
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_visual_motor_long, test, score)
+```
+
+#### Outliers 
+
+Of the 19 scores identified to be outliers, none are considered extreme.  
+
+```{r, include=FALSE}
+three_bl_pi_visual_motor_outliers <- three_bl_pi_visual_motor_long %>% 
+  group_by(test) %>% 
+  identify_outliers(score) %>% 
+  select(-c(3:8))
+
+three_bl_pi_visual_motor_outliers %>% 
+  count(is.outlier)
+
+three_bl_pi_visual_motor_outliers %>% 
+  count(is.extreme)
+```
+
+```{r, include=TRUE}
+three_bl_pi_visual_motor_outliers %>% 
+  reactable()
+```
+
+#### Normality Assumption
+
+From the plot, normality is assumed. 
+
+```{r, include=TRUE, fig.width=10}
+ggplot(three_bl_pi_visual_motor_long, aes(sample = score)) +
+  stat_qq(alpha = 0.3) +
+  stat_qq_line() +
+  facet_wrap(~test)
+```
+
+#### ANOVA Computation
+
+```{r, include=FALSE}
+three_bl_pi_visual_motor_res <- anova_test(three_bl_pi_visual_motor_long, 
+                                   dv = score,
+                                   wid = passport_id, 
+                                   within = test)
+
+```
+
+```{r, include=TRUE}
+get_anova_table(three_bl_pi_visual_motor_res)
+```
+
+#### Pairwise Comparisons 
+
+```{r, include=FALSE}
+three_bl_pi_visual_motor_pwc <- three_bl_pi_visual_motor_long %>% 
+  pairwise_t_test(
+    score ~ test, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+
+three_bl_pi_visual_motor_pwc
+```
+
+```{r, include=TRUE}
+three_bl_pi_visual_motor_pwc %>% 
+  reactable()
+```
+
+#### Result Visualization
+```{r, include=FALSE}
+three_bl_pi_visual_motor_pwc <- three_bl_pi_visual_motor_pwc %>% 
+  add_xy_position(x = "test")
+```
+
+```{r, include=TRUE, fig.height=6, fig.width=12}
+box_p(three_bl_pi_visual_motor_long, test, score) +
+  stat_pvalue_manual(three_bl_pi_visual_motor_pwc) +
+  labs(
+    subtitle = get_test_label(three_bl_pi_visual_motor_res, detailed = TRUE),
+    caption = get_pwc_label(three_bl_pi_visual_motor_pwc)
+  )
+```
+
+#### Baseline 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_visual_motor, user_visual_motor_composite_score_1)
+```
+
+#### Baseline 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_visual_motor, user_visual_motor_composite_score_1)
+```
+
+#### Post-Injury 1 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_1)
+```
+
+#### Post-injury 1 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_1)
+```
+
+#### Baseline 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_visual_motor, user_visual_motor_composite_score_2)
+```
+
+#### Baseline 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_visual_motor, user_visual_motor_composite_score_2)
+```
+
+#### Post-Injury 2 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_2)
+```
+
+#### Post-injury 2 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_2)
+```
+
+#### Baseline 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_visual_motor, user_visual_motor_composite_score_3)
+```
+
+#### Baseline 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_visual_motor, user_visual_motor_composite_score_3)
+```
+
+#### Post-Injury 3 Summary
+```{r, include=TRUE}
+create_react(three_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_3)
+```
+
+#### Post-injury 3 Histogram 
+```{r, include=TRUE}
+score_hist(three_bl_pi_visual_motor, user_visual_motor_composite_score_post_injury_3)
+```
+
+## Baseline and Post-Injury Summary
