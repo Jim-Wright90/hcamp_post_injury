@@ -163,6 +163,11 @@ test_time <- impact %>%
          user_impulse_control_composite_score,
          user_visual_motor_composite_score) 
 
+#added this object and can be joined to specific test objects with na.omit() to add gender variable for modeling 
+gender_data <- test_time %>% 
+  select(passport_id, user_gender) %>% 
+  arrange(passport_id)
+
 str(test_time)
 
 test_time <- test_time %>% 
@@ -695,7 +700,7 @@ pi_plot <- ggplot(t_sum_pi, aes(fct_reorder(Level, Total), Total)) +
   geom_text(aes(Level, Total, label = Total),
             hjust = 1.2,
             nudge_y = 0.02,
-            size = 4,
+            size = 3,
             color = "white") +
   labs(x = "",
        y = "Total",
@@ -727,11 +732,12 @@ t_sum_bl_pi %>%
     compact = TRUE,
     highlight = TRUE,
     bordered = TRUE)
+
 ```
 
 ## Plot 1
 
-```{r, include=TRUE, fig.height=12, fig.width=14}
+```{r, include=TRUE, fig.height=12, fig.width=15}
 bl_pi_plot
 ```
 
